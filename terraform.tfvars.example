@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and adjust. Never commit a real terraform.tfvars
+# with secrets — it is gitignored.
+location            = "eastus"
+resource_group_name = "rg-vnet-lab"
+
+# Your public IP, e.g. "203.0.113.10/32". Leave empty to skip the admin rule.
+admin_source_ip = ""
+
+# Set to true to deploy a NAT Gateway for the spoke subnets (~$32/mo).
+enable_nat_gateway = false
+
+# Private IP of a hub firewall/NVA, e.g. "10.0.1.4". Leave empty if none.
+firewall_private_ip = ""
