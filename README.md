@@ -36,10 +36,13 @@ flowchart TB
   `firewall_private_ip` and spoke egress gets a `0.0.0.0/0` route via it.
 - **Optional NAT Gateway** (`enable_nat_gateway`) for outbound-only
   internet from the spoke subnets.
-- **Test VM (`vm-test-web`)** in the Central US spoke: Standard_B2pts_v2
-  (2 vCPU / 1 GiB, ARM, burstable), Ubuntu 22.04 LTS ARM64, 64 GB P6
-  Premium SSD, no public IP. Managed via serial console or
-  `az vm run-command`. See Cost notes for why it is $0.
+- **NVA routing lab (`vm-nva`)** in the Central US spoke: a Linux
+  network virtual appliance (B2pts_v2, ARM64) with IP forwarding and
+  iptables NAT. The Central US web subnet's default route points at it
+  (`0.0.0.0/0` → VirtualAppliance), so `vm-test-web` reaches the
+  internet through the NVA. See `nva.tf` for the design and the verify
+  commands. It lives in Central US because B2pts_v2 is restricted in
+  East US / East US 2 on a free-trial subscription.
 
 ## Cost notes
 
@@ -56,6 +59,13 @@ was chosen because the free-trial offer blocks B1s/B1ms/B2s in East US and
 East US 2 (`NotAvailableForSubscription` — an offer restriction, not
 quota); B2pts_v2 is unrestricted in Central US. After the 12 free months
 end, B2pts_v2 bills at list (~$7/mo).
+
+**NVA, ~$7/mo:** the 750 free B2pts_v2 hours are already used by
+`vm-test-web`, so a second B2pts_v2 running 24/7 bills ~$0.00949/hr
+(~$6.93/mo). Its P6 disk is free (the second of the 2 x 64 GB
+allowance). Deallocate it when you are not labbing to stop the meter —
+but note the web subnet's default route still points at it, so the web
+subnet has no internet while it is off.
 
 ## Usage
 
@@ -78,6 +88,8 @@ admin source IP, and optional features. Requires Terraform >= 1.5 and the
 | `network.tf` | Subnets, NSGs, route table, optional NAT Gateway |
 | `vm.tf` | East US 2 spoke (network only — the VM moved to Central US) |
 | `centralus.tf` | Central US spoke, test VM (B2pts_v2, ARM64, P6 disk, no public IP) |
+| `nva.tf` | NVA routing lab (NVA subnet, NIC with IP forwarding, vm-nva, UDR) |
+| `nva-cloud-init.yaml` | Cloud-init for vm-nva: IP forwarding + iptables NAT at boot |
 | `variables.tf` | All inputs, with defaults and descriptions |
 | `outputs.tf` | VNet, subnet, and NSG IDs for downstream modules |
 | `versions.tf` | Terraform and provider version pins |
