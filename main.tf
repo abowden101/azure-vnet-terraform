@@ -1,3 +1,8 @@
+provider "azurerm" {
+  features {}
+  subscription_id = "208dfa8a-b955-40c2-9bc6-d4203d7c8f72"
+}
+
 resource "azurerm_resource_group" "network" {
   name     = var.resource_group_name
   location = var.location
