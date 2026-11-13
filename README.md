@@ -21,6 +21,8 @@ flowchart TB
 | --- | --- | --- |
 | `vnet-hub` | 10.0.0.0/16 | GatewaySubnet 10.0.0.0/24, AzureFirewallSubnet 10.0.1.0/24, SharedServices 10.0.2.0/24 |
 | `vnet-spoke` | 10.1.0.0/16 | web 10.1.0.0/24, app 10.1.1.0/24, data 10.1.2.0/24 |
+| `vnet-spoke-use2` | 10.2.0.0/16 | web 10.2.0.0/24 (East US 2) |
+| `vnet-spoke-centralus` | 10.3.0.0/16 | web 10.3.0.0/24 (Central US, hosts the test VM) |
 
 ## What it builds
 
@@ -34,6 +36,10 @@ flowchart TB
   `firewall_private_ip` and spoke egress gets a `0.0.0.0/0` route via it.
 - **Optional NAT Gateway** (`enable_nat_gateway`) for outbound-only
   internet from the spoke subnets.
+- **Test VM (`vm-test-web`)** in the Central US spoke: Standard_B2pts_v2
+  (2 vCPU / 1 GiB, ARM, burstable), Ubuntu 22.04 LTS ARM64, 64 GB P6
+  Premium SSD, no public IP. Managed via serial console or
+  `az vm run-command`. See Cost notes for why it is $0.
 
 ## Cost notes
 
@@ -42,6 +48,14 @@ table — all free or near-free. The expensive parts are deliberately
 optional or absent: Azure Firewall (~$1,000/mo) is not deployed, and the
 NAT Gateway (~$32/mo) is off by default. Remember to `terraform destroy`
 when you are done with a lab.
+
+**Test VM, $0:** the 12-month free allowance covers 750 hrs/mo of B2pts_v2
+compute and 2 x 64 GB P6 disks, and the VM has no public IP (a Standard IP
+would bill ~$3.65/mo). Total: $0/mo while the allowance lasts. B2pts_v2
+was chosen because the free-trial offer blocks B1s/B1ms/B2s in East US and
+East US 2 (`NotAvailableForSubscription` — an offer restriction, not
+quota); B2pts_v2 is unrestricted in Central US. After the 12 free months
+end, B2pts_v2 bills at list (~$7/mo).
 
 ## Usage
 
@@ -62,6 +76,8 @@ admin source IP, and optional features. Requires Terraform >= 1.5 and the
 | --- | --- |
 | `main.tf` | Resource group, hub/spoke VNets, peering |
 | `network.tf` | Subnets, NSGs, route table, optional NAT Gateway |
+| `vm.tf` | East US 2 spoke (network only — the VM moved to Central US) |
+| `centralus.tf` | Central US spoke, test VM (B2pts_v2, ARM64, P6 disk, no public IP) |
 | `variables.tf` | All inputs, with defaults and descriptions |
 | `outputs.tf` | VNet, subnet, and NSG IDs for downstream modules |
 | `versions.tf` | Terraform and provider version pins |
